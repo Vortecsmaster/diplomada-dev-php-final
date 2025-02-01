@@ -1,5 +1,6 @@
 import {
     Blockfrost,
+    C,
     Data,
     Lucid,
     MintingPolicy,
@@ -13,16 +14,17 @@ import {
     fromUnit,
     Constr,
     fromText,
+    JSON,
     WalletApi,
     Address,
     OutputDatum,
     Promise,
 } from '@lucid-evolution/lucid';
 import {validatorToAddress,mintingPolicyToId} from '@lucid-evolution/utils';
-import { datos,contratos } from "./diplomada.js";
+import { datos,contratos } from "./diplomada.ts";
 
 
-import { ParamsDiplomADA, ParamsInscripcion, MD_DiplomADA, Resultado } from './dadatipos.js';
+import { MD_Titulos, ParamsInscripcion, Resultado } from './dadatipos';
 import $ from "jquery";
 import * as swal from 'sweetalert';
 
@@ -58,28 +60,21 @@ const setWallet = () => {
     walletAlert?.classList.add('d-none');
 };
 
-let api: WalletApi;
-
 export const conectar = async () => {
-    api = await window.cardano.nami.enable();
+    const api: WalletApi = await window.cardano.nami.enable();
      //console.log(api);
     setWallet();
     lucid.selectWallet.fromAPI(api);
     //console.log(lucid.config.toString);
-    
-
 };
 
 // console.log("Api ->" + api);
 // const direccion = await lucid.wallet().address();
 // console.log("Direccion aqui?? -" + direccion);
 
-// type Cip30 = Awaited<Promise<WalletApi>>;
-// const cip30: Cip30 = await conectar();
-
 
 export const getBalance = async () => {
-    const balance = await api.getBalance();
+    const balance = await window.cardano.getBalance();
     if (showBalance) {
         showBalance.innerHTML = `Balance Disponible: ${parseInt(balance.substr(3, 30),16)/1000000} ₳`;
     }
@@ -87,8 +82,8 @@ export const getBalance = async () => {
 };  // Verificar codigo para cuando hay varios tokens ademas de ADA.  El codigo solo funciona bien si la wallet tiene solo Ada.
 
 export const cardanoIsEnabled = async (): Promise<any> => {
-    //console.log(await window.cardano.nami.isEnabled());
-    return await window.cardano.nami.isEnabled();
+    //console.log(await window.cardano.isEnabled());
+    return await window.cardano.isEnabled();
 };
 
 export const address = async (): Promise<any> => {
@@ -154,7 +149,8 @@ export const crearTitulos = async (): Promise<Resultado<any>> => {
             // console.log("redeeemer      -> " + titulosyNotasRedeemer);
             // console.log(mintRedeemer);
 
-            const jsonData: MD_DiplomADA = {
+
+            const jsonData: MD_Titulos = {
                 [titulosynotas_pid]: {
                     [tokenName_Titulos]: {
                         id: 1,
@@ -192,6 +188,7 @@ export const crearTitulos = async (): Promise<Resultado<any>> => {
                  .attachMetadata("721", jsonData)
                  .complete();
 
+
              const signedTx = await tx.sign.withWallet().complete();
              console.log('signedTX '+signedTx);
              const txHash = await signedTx.submit();
@@ -223,6 +220,7 @@ $.get('data_inscripcion/',function(data){
     datos['correo']=data[0]['correo'];
 })
 
+
 var dumyParams = { 
     nombres: datos['nombres'], 
     apellidos: datos['apellidos'], 
@@ -236,18 +234,7 @@ var dumyParams = {
     correo: datos['correo'],
     curso: "Licenciatura en Desarrollo de Aplicacioneses en Cardano",
     url: "https://shorturl.at/NRvjj"
-};
-
-var dumyParamsDiplomADA: ParamsDiplomADA = {
-    nombres: "Roberto Jose", 
-    apellidos: "Cerrud Campos", 
-    cedula: "8-888-888", 
-    nombre_curso: "Licenciatura en Desarrollo de Aplicacioneses en Cardano", 
-    estatus_aprobatoria: "Aprobado",
-    direccion: "Panama, Panama",
-    creditos: 92    
-};
-
+}
 // console.log(dumyParams,datos);
 const hastala = document.getElementById("hastala");
     if (hastala) {
@@ -273,43 +260,18 @@ const hastala = document.getElementById("hastala");
         }
         //colocar las notificaciones verificando demo en el campo type
         //await crearTitulos();
-        });
+    });
     }
-
-
-const diplomada = document.getElementById("diplomada");
-    if (diplomada) {
-        diplomada.addEventListener("click", async function () {
-            console.log(dumyParamsDiplomADA);
-            var demo = crearDiplomADA(dumyParamsDiplomADA);
-
-            if ((await demo).type == 'error') {
-                alert('debe Reconectar la billetera');
-            }
-            if ((await demo).type == 'ok') {
-                $.get('hash/'+(await demo).data,function(data1){
-                console.log('entre a revisar el hash');
-                if (data1) {
-                    alert('NFT creados verifique su billetera');
-                }else{
-                    alert('Ocurrio un problema al crear el NFT intente nuevamente');
-                }
-        });
-        alert('Proceso de Certificacion completado');
-    }
-    //colocar las notificaciones verificando demo en el campo type
-    //await crearTitulos();
-        });
-    } 
 
     $(document).ready( function () {
         $('#salir').click(function() {
-            const prueba = window.cardano.nami;
+            const prueba = window.cardano;
             console.log('hice click aqui: ',prueba);
         } );
     } );
 
-    const hastala1 = document.getElementById("hastala1");
+
+const hastala1 = document.getElementById("hastala1");
     if (hastala1) {
         hastala1.addEventListener("click", async function () {
         const demo = await crearTitulos();
@@ -319,6 +281,8 @@ const diplomada = document.getElementById("diplomada");
         }
     });
     }
+
+
 
 export const crearInscripcion = async (params: ParamsInscripcion): Promise<Resultado<any>> => {
     
@@ -339,7 +303,7 @@ export const crearInscripcion = async (params: ParamsInscripcion): Promise<Resul
                 const dadaValDireccion: string = validatorToAddress("Preview",dadaVal_Validacion);
                 //console.log("pase validtortoAddress");
                 const direccionEstudiante: Address = await lucid.wallet().address();
-                const tokenName_Inscripcion = params.cedula;
+                const tokenName_Inscripcion = dumyParams.cedula;
                 const nftInscripcion_tokenName = fromText(tokenName_Inscripcion);
                 const nftInscripcion_pid: PolicyId = mintingPolicyToId(dadaPM_Inscripcion);
                 const inscripcion_dada: Unit = toUnit(nftInscripcion_pid, nftInscripcion_tokenName);
@@ -360,27 +324,28 @@ export const crearInscripcion = async (params: ParamsInscripcion): Promise<Resul
                 // console.log(mintRedeemer);
     
     
-                const jsonData: MD_DiplomADA = {
+                const jsonData: MD_Titulos = {
                     [nftInscripcion_pid]: {
                         [tokenName_Inscripcion]: {
                             id: 1,
                             name: "Diplomada Inscripcion 1",
-                            image: params.url,
+                            image: [params.url],
                             description: "Diplomada Titulo Test"
                         },
-                        datos_estudiante: {
+                        
+                        "datos_estudiante": {
                             hash: "fac7b8513f4b985174e88a02ee8165fc",
-                            nombres: params.nombres,
-                            apellidos: params.apellidos,
-                            cedula: params.cedula,
-                            sexo: params.sexo,
-                            fecha_nac: params.fecha_nac,
-                            direccion: params.direccion,
-                            telefono_habitacion: params.telefono_habitacion,
-                            telefono_otros: params.telefono_otros,
-                            celular: params.celular,
-                            correo: params.correo,
-                            curso: params.curso
+                            nombres: [params.nombres],
+                            apellidos: [params.apellidos],
+                            cedula: [params.cedula],
+                            sexo: [params.sexo],
+                            fecha_nac: [params.fecha_nac],
+                            direccion: [params.direccion],
+                            telefono_habitacion: [params.telefono_habitacion],
+                            telefono_otros: [params.telefono_otros],
+                            celular: [params.celular],
+                            correo: [params.correo],
+                            curso: "Diplomada en Desarrollo de Aplicacopmes en Cardano"
                         },
                     },
                 };
@@ -407,110 +372,6 @@ export const crearInscripcion = async (params: ParamsInscripcion): Promise<Resul
                  console.log("Funciono -> " + success);
                  const mensaje = "por aqui si es";
                  //console.log(mensaje);
-    
-           return { type: "ok", data: txHash };
-            }
-        } catch (error) {
-            console.log("error -> " + error);
-            if (error instanceof Error) return { type: "error", error: error };
-            return { type: "error", error: new Error(error as string) };
-        }
-    }
-
-export const crearDiplomADA = async (params: ParamsDiplomADA): Promise<Resultado<any>> => {
-    
-        try {cardanoIsEnabled 
-            if (lucid) {
-                console.log("Creando DiplomADA NFT ...");
-                const dadaPM_DiplomADA: MintingPolicy = {
-                     type: "PlutusV3",
-                     script: contratos.scripts.pm_diploma
-                }
-    
-                const dadaVal_Validacion: SpendingValidator = {
-                    type: "PlutusV3",
-                    script: contratos.scripts.val_verificacion
-                }
-    
-                //console.log("cree las variables de los contratos V3.")
-                
-                const dadaValDireccion: string = validatorToAddress("Preview",dadaVal_Validacion);
-                //console.log("pase validtortoAddress");
-                const direccionEstudiante: Address = await lucid.wallet().address();
-                const tokenName_DiplomADA = params.cedula;
-                const nftDiplomADA_tokenName = fromText(tokenName_DiplomADA);
-                const nftDiplomADA_pid: PolicyId = mintingPolicyToId(dadaPM_DiplomADA);
-                const inscripcion_dada: Unit = toUnit(nftInscripcion_pid, nftInscripcion_tokenName);
-                const inscripcionRedeemer = BigInt(1);
-                const mintRedeemer = Data.to(inscripcionRedeemer);
-    
-                console.log(dadaPM_TitulosyNotas);
-                console.log("validator address -> " + dadaValDireccion);
-                console.log("address -> " + direccionEstudiante);
-                console.log("Nombre Token Titulos: " + tokenName_Titulos + " -> " + titulos_tokenName);
-                console.log("Nombre Token Notas: " + tokenName_Notas + " -> " + notas_tokenName);
-                console.log("pid            -> " + titulosynotas_pid)
-                console.log("NFT Titulos    -> " + titulos_dada);
-                console.log(fromUnit(titulos_dada));
-                console.log(fromUnit(notas_dada));
-                console.log("redeeemer      -> " + titulosyNotasRedeemer);
-                console.log(mintRedeemer);
-    
-
-                // export type ParamsDiplomADA = {
-                //     nombres: string;
-                //     apellidos: string;
-                //     cedula: string;
-                //     nombre_curso: string;
-                //     estatus_aprobatoria: string;
-                //     direccion: string;
-                //     creditos: string;
-                //   };
-    
-                const jsonData: MD_DiplomADA = {
-                    [nftDiplomADA_pid]: {
-                        [tokenName_DiplomADA]: {
-                            id: 1,
-                            name: "DiplomADA 1",
-                            image: "https://rb.gy/j11dx7",
-                            description: "Diplomada TEST"
-                        },
-                        "datos_estudiante": {
-                            hash: "fac7b8513f4b985174e88a02ee8165fc",
-                            nombres: params.nombres,
-                            apellidos: params.apellidos,
-                            cedula: params.cedula,
-                            curso: params.nombre_curso,
-                        },
-                    },
-                };
-
-                const stringData = JSON.stringify(jsonData);
-
-                console.log("jsonData -> " + jsonData);
-           
-                const datum_crudo = Data.to(BigInt(1));
-                //console.log("Datum crudo: -> " + datum_crudo);
-                const datum: OutputDatum = {kind: "inline", value: datum_crudo};
-    
-                 const tx = await lucid
-                     .newTx()
-                     .mintAssets({[inscripcion_dada]: BigInt(2)}, mintRedeemer)
-                     .pay.ToAddress(direccionEstudiante, { [inscripcion_dada]: BigInt(1), lovelace: BigInt(2000000)})
-                     .pay.ToContract(dadaValDireccion, datum , { [inscripcion_dada]: BigInt(1), lovelace: BigInt(2000000)})
-                     .attach.MintingPolicy(dadaPM_DiplomADA)
-                     .attachMetadata(721, stringData)
-                     .complete();
-    
-    
-                 const signedTx = await tx.sign.withWallet().complete();
-    
-                 const txHash = await signedTx.submit();
-                 console.log("txHash -> " + txHash);
-                 const success = await lucid!.awaitTx(txHash)
-                 console.log("Funciono -> " + success);
-                 const mensaje = "por aqui si es";
-                 console.log(mensaje);
     
            return { type: "ok", data: txHash };
             }

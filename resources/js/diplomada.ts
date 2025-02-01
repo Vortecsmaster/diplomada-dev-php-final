@@ -1,5 +1,5 @@
 import { parametrizer } from "./utils";
-import { DiplomadaConfig, Resultado } from "./dadaTipos.ts";
+import { DiplomadaConfig, Resultado } from "./dadatipos";
 
 const contratosNoParametrizados: DiplomadaConfig = {
     scripts: {
